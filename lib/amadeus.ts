@@ -147,15 +147,31 @@ export async function searchFlights(params: {
 
     // Generate booking link using Google search that redirects to Google Flights
     // This is the most reliable method that consistently works
+
+    // Map cabin class to friendly names
+    const cabinNames: { [key: string]: string } = {
+      economy: 'economy',
+      premium_economy: 'premium economy',
+      business: 'business class',
+      first: 'first class',
+    };
+    const cabinName = cabinNames[params.travelClass] || 'economy';
+
     let searchQuery = `google flights ${params.origin} to ${params.destination}`;
 
     // Add date information
     searchQuery += ` ${params.departureDate}`;
     if (params.returnDate) {
       searchQuery += ` to ${params.returnDate}`;
+    } else {
+      // Specify one way
+      searchQuery += ` one way`;
     }
 
-    // Add passenger and class info
+    // Add cabin class
+    searchQuery += ` ${cabinName}`;
+
+    // Add passenger count
     if (params.adults > 1) {
       searchQuery += ` ${params.adults} passengers`;
     }
