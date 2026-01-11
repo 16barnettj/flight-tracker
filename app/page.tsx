@@ -372,12 +372,14 @@ export default function Dashboard() {
 
                   {currentPrice && (
                     <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                      <div className="text-sm text-gray-600 mb-2">Current Price</div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Current Price {flight.numPassengers > 1 ? `(${flight.numPassengers} passengers)` : ''}
+                      </div>
                       <div className="text-3xl font-bold text-blue-600 mb-1">
                         ${currentPrice.price.toFixed(2)}
                       </div>
                       {flight.numPassengers > 1 && (
-                        <div className="text-sm text-gray-600 mb-3">
+                        <div className="text-sm font-semibold text-gray-700 mb-3">
                           ${(currentPrice.price / flight.numPassengers).toFixed(2)} per passenger
                         </div>
                       )}
