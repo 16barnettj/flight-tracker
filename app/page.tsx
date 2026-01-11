@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { AIRPORTS } from '@/lib/airports';
+import { AIRLINES } from '@/lib/airlines';
 
 interface PriceHistory {
   id: string;
@@ -45,6 +47,12 @@ export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [error, setError] = useState('');
+  const [showOriginDropdown, setShowOriginDropdown] = useState(false);
+  const [showDestDropdown, setShowDestDropdown] = useState(false);
+  const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
+  const originRef = useRef<HTMLDivElement>(null);
+  const destRef = useRef<HTMLDivElement>(null);
+  const airlineRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -61,6 +69,43 @@ export default function Dashboard() {
   useEffect(() => {
     fetchFlights();
   }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (originRef.current && !originRef.current.contains(event.target as Node)) {
+        setShowOriginDropdown(false);
+      }
+      if (destRef.current && !destRef.current.contains(event.target as Node)) {
+        setShowDestDropdown(false);
+      }
+      if (airlineRef.current && !airlineRef.current.contains(event.target as Node)) {
+        setShowAirlineDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter airports based on search
+  const filteredOrigins = AIRPORTS.filter(
+    (airport) =>
+      airport.code.toLowerCase().includes(formData.origin.toLowerCase()) ||
+      airport.name.toLowerCase().includes(formData.origin.toLowerCase()) ||
+      airport.city.toLowerCase().includes(formData.origin.toLowerCase())
+  ).slice(0, 10);
+
+  const filteredDestinations = AIRPORTS.filter(
+    (airport) =>
+      airport.code.toLowerCase().includes(formData.destination.toLowerCase()) ||
+      airport.name.toLowerCase().includes(formData.destination.toLowerCase()) ||
+      airport.city.toLowerCase().includes(formData.destination.toLowerCase())
+  ).slice(0, 10);
+
+  const filteredAirlines = AIRLINES.filter((airline) =>
+    airline.toLowerCase().includes(formData.airline.toLowerCase())
+  ).slice(0, 10);
 
   const fetchFlights = async () => {
     try {
@@ -416,50 +461,109 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div>
+              <div ref={originRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Origin Airport Code
+                  Origin Airport
                 </label>
                 <input
                   type="text"
                   value={formData.origin}
-                  onChange={(e) =>
-                    setFormData({ ...formData, origin: e.target.value.toUpperCase() })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, origin: e.target.value.toUpperCase() });
+                    setShowOriginDropdown(true);
+                  }}
+                  onFocus={() => setShowOriginDropdown(true)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="SFO"
-                  maxLength={3}
+                  placeholder="Search by code or city..."
                   required
                 />
+                {showOriginDropdown && filteredOrigins.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredOrigins.map((airport) => (
+                      <button
+                        key={airport.code}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, origin: airport.code });
+                          setShowOriginDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center"
+                      >
+                        <span className="font-medium">{airport.code}</span>
+                        <span className="text-sm text-gray-600">{airport.city}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div ref={destRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Destination Airport Code
+                  Destination Airport
                 </label>
                 <input
                   type="text"
                   value={formData.destination}
-                  onChange={(e) =>
-                    setFormData({ ...formData, destination: e.target.value.toUpperCase() })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, destination: e.target.value.toUpperCase() });
+                    setShowDestDropdown(true);
+                  }}
+                  onFocus={() => setShowDestDropdown(true)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="JFK"
-                  maxLength={3}
+                  placeholder="Search by code or city..."
                   required
                 />
+                {showDestDropdown && filteredDestinations.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredDestinations.map((airport) => (
+                      <button
+                        key={airport.code}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, destination: airport.code });
+                          setShowDestDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-blue-50 flex justify-between items-center"
+                      >
+                        <span className="font-medium">{airport.code}</span>
+                        <span className="text-sm text-gray-600">{airport.city}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div ref={airlineRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Airline</label>
                 <input
                   type="text"
                   value={formData.airline}
-                  onChange={(e) => setFormData({ ...formData, airline: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, airline: e.target.value });
+                    setShowAirlineDropdown(true);
+                  }}
+                  onFocus={() => setShowAirlineDropdown(true)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="United Airlines"
+                  placeholder="Search airlines..."
                   required
                 />
+                {showAirlineDropdown && filteredAirlines.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredAirlines.map((airline) => (
+                      <button
+                        key={airline}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, airline });
+                          setShowAirlineDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-blue-50"
+                      >
+                        {airline}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
