@@ -141,6 +141,10 @@ export async function POST(request: NextRequest) {
             flightId: flight.id,
             price: priceData.price,
             currency: priceData.currency,
+            baseFare: priceData.baseFare,
+            taxes: priceData.taxes,
+            fees: priceData.fees,
+            bookingLink: priceData.bookingLink,
             amadeusOfferId: priceData.offerId,
           },
         });

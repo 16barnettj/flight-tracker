@@ -2,15 +2,25 @@
 
 // List of valid IATA airport codes (subset - add more as needed)
 const VALID_AIRPORTS = [
+  // Major US Airports
   'SFO', 'LAX', 'JFK', 'ORD', 'ATL', 'DFW', 'DEN', 'SEA', 'LAS', 'PHX',
   'IAH', 'MIA', 'BOS', 'MSP', 'DTW', 'PHL', 'LGA', 'EWR', 'MCO', 'CLT',
   'SAN', 'PDX', 'TPA', 'STL', 'BWI', 'AUS', 'BNA', 'OAK', 'SJC', 'SAT',
+  'IAD', 'DCA', 'MDW', 'HOU', 'DAL', 'SNA', 'SMF', 'RDU', 'IND', 'MCI',
+  'CLE', 'PIT', 'CVG', 'CMH', 'MKE', 'MSY', 'RSW', 'PBI', 'FLL', 'BDL',
+  'PVD', 'SLC', 'ABQ', 'ELP', 'TUS', 'RNO', 'BUR', 'ONT', 'SJU', 'ANC',
+  'HNL', 'OGG', 'LIH', 'KOA', 'JAX', 'RIC', 'ORF', 'MHT', 'BUF', 'ROC',
+  'SYR', 'ALB', 'PWM', 'BTV', 'GSO', 'RDU', 'CHS', 'SAV', 'DSM', 'OMA',
+  'TUL', 'OKC', 'ICT', 'LIT', 'MEM', 'BHM', 'JAC', 'BOI', 'GEG', 'FAT',
   // International
-  'LHR', 'CDG', 'FRA', 'AMS', 'MAD', 'BCN', 'FCO', 'MXP', 'DUB', 'ZRH',
-  'VIE', 'CPH', 'ARN', 'HEL', 'IST', 'ATH', 'LIS', 'BRU', 'PRG', 'BUD',
-  'YYZ', 'YVR', 'YUL', 'MEX', 'GDL', 'CUN', 'GRU', 'EZE', 'SCL', 'BOG',
-  'LIM', 'NRT', 'HND', 'ICN', 'PVG', 'PEK', 'HKG', 'SIN', 'BKK', 'KUL',
-  'DEL', 'BOM', 'SYD', 'MEL', 'AKL', 'DXB', 'DOH', 'AUH', 'JNB', 'CPT',
+  'LHR', 'LGW', 'LCY', 'STN', 'CDG', 'ORY', 'FRA', 'MUC', 'AMS', 'MAD',
+  'BCN', 'FCO', 'MXP', 'VCE', 'DUB', 'ZRH', 'VIE', 'CPH', 'ARN', 'HEL',
+  'IST', 'ATH', 'LIS', 'BRU', 'PRG', 'BUD', 'WAW', 'OTP', 'SOF', 'ZAG',
+  'YYZ', 'YVR', 'YUL', 'YYC', 'YEG', 'MEX', 'GDL', 'CUN', 'SJD', 'PVR',
+  'GRU', 'GIG', 'EZE', 'SCL', 'BOG', 'LIM', 'UIO', 'PTY', 'SJO', 'NRT',
+  'HND', 'KIX', 'ICN', 'PVG', 'PEK', 'CAN', 'HKG', 'SIN', 'BKK', 'KUL',
+  'CGK', 'MNL', 'DEL', 'BOM', 'BLR', 'SYD', 'MEL', 'BNE', 'AKL', 'DXB',
+  'DOH', 'AUH', 'BAH', 'JED', 'RUH', 'CAI', 'JNB', 'CPT', 'NBO', 'ADD',
 ];
 
 export function validateAirportCode(code: string): { valid: boolean; message?: string } {

@@ -8,7 +8,16 @@ interface AmadeusFlightOffer {
   id: string;
   price: {
     total: string;
+    base: string;
     currency: string;
+    fees?: Array<{
+      amount: string;
+      type: string;
+    }>;
+    grandTotal: string;
+  };
+  pricingOptions?: {
+    fareType?: string[];
   };
 }
 
@@ -50,7 +59,15 @@ export async function searchFlights(params: {
   departureDate: string;
   adults: number;
   travelClass: string;
-}): Promise<{ price: number; currency: string; offerId: string } | null> {
+}): Promise<{
+  price: number;
+  currency: string;
+  offerId: string;
+  baseFare?: number;
+  taxes?: number;
+  fees?: number;
+  bookingLink?: string;
+} | null> {
   try {
     const token = await getAmadeusToken();
 
@@ -93,10 +110,32 @@ export async function searchFlights(params: {
     }
 
     const offer: AmadeusFlightOffer = data.data[0];
+
+    // Calculate taxes (total - base)
+    const total = parseFloat(offer.price.grandTotal || offer.price.total);
+    const base = parseFloat(offer.price.base);
+    const taxesAndFees = total - base;
+
+    // Calculate fees if available
+    let fees = 0;
+    if (offer.price.fees) {
+      fees = offer.price.fees.reduce((sum, fee) => sum + parseFloat(fee.amount), 0);
+    }
+
+    const taxes = taxesAndFees - fees;
+
+    // Generate booking link (Amadeus test environment doesn't provide deep links,
+    // so we'll create a search URL that users can use)
+    const bookingLink = `https://www.google.com/travel/flights?q=flights+from+${params.origin}+to+${params.destination}+on+${params.departureDate}`;
+
     return {
-      price: parseFloat(offer.price.total),
+      price: total,
       currency: offer.price.currency,
       offerId: offer.id,
+      baseFare: base,
+      taxes: taxes > 0 ? taxes : undefined,
+      fees: fees > 0 ? fees : undefined,
+      bookingLink,
     };
   } catch (error) {
     console.error('Error searching flights:', error);

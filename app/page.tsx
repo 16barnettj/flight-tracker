@@ -7,6 +7,10 @@ interface PriceHistory {
   id: string;
   price: number;
   currency: string;
+  baseFare?: number;
+  taxes?: number;
+  fees?: number;
+  bookingLink?: string;
   checkedAt: string;
 }
 
@@ -299,10 +303,48 @@ export default function Dashboard() {
 
                   {currentPrice && (
                     <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                      <div className="text-sm text-gray-600 mb-1">Current Price</div>
-                      <div className="text-3xl font-bold text-blue-600">
+                      <div className="text-sm text-gray-600 mb-2">Current Price</div>
+                      <div className="text-3xl font-bold text-blue-600 mb-3">
                         ${currentPrice.price.toFixed(2)}
                       </div>
+
+                      {/* Price Breakdown */}
+                      {(currentPrice.baseFare || currentPrice.taxes || currentPrice.fees) && (
+                        <div className="border-t border-blue-200 pt-3 space-y-1 text-sm">
+                          {currentPrice.baseFare && (
+                            <div className="flex justify-between text-gray-700">
+                              <span>Base Fare:</span>
+                              <span>${currentPrice.baseFare.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {currentPrice.taxes && currentPrice.taxes > 0 && (
+                            <div className="flex justify-between text-gray-700">
+                              <span>Taxes:</span>
+                              <span>${currentPrice.taxes.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {currentPrice.fees && currentPrice.fees > 0 && (
+                            <div className="flex justify-between text-gray-700">
+                              <span>Fees:</span>
+                              <span>${currentPrice.fees.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Booking Link */}
+                      {currentPrice.bookingLink && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <a
+                            href={currentPrice.bookingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+                          >
+                            Book Flight →
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
 
