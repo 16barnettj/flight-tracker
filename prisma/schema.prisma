@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Flight {
+  id           String         @id @default(uuid())
+  origin       String
+  destination  String
+  airline      String
+  travelDate   DateTime
+  cabinClass   String         // economy, premium_economy, business, first
+  numPassengers Int
+  createdAt    DateTime       @default(now())
+  isActive     Boolean        @default(true)
+
+  priceHistory PriceHistory[]
+  notifications Notification[]
+
+  @@map("flights")
+}
+
+model PriceHistory {
+  id              String   @id @default(uuid())
+  flightId        String
+  price           Float
+  currency        String   @default("USD")
+  checkedAt       DateTime @default(now())
+  amadeusOfferId  String?
+
+  flight Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+
+  @@map("price_history")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  flightId  String
+  message   String
+  oldPrice  Float
+  newPrice  Float
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  flight Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
