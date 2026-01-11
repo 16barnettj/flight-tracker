@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
         origin: flight.origin,
         destination: flight.destination,
         departureDate: flight.travelDate.toISOString().split('T')[0],
+        returnDate: flight.returnDate ? flight.returnDate.toISOString().split('T')[0] : undefined,
         adults: flight.numPassengers,
         travelClass: flight.cabinClass,
       });

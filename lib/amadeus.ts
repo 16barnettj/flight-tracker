@@ -57,6 +57,7 @@ export async function searchFlights(params: {
   origin: string;
   destination: string;
   departureDate: string;
+  returnDate?: string;
   adults: number;
   travelClass: string;
 }): Promise<{
@@ -86,8 +87,14 @@ export async function searchFlights(params: {
       adults: params.adults.toString(),
       travelClass: classMap[params.travelClass] || 'ECONOMY',
       currencyCode: 'USD',
+      nonStop: 'true',
       max: '1',
     });
+
+    // Add return date for round-trip flights
+    if (params.returnDate) {
+      queryParams.append('returnDate', params.returnDate);
+    }
 
     const response = await fetch(
       `https://test.api.amadeus.com/v2/shopping/flight-offers?${queryParams}`,
@@ -111,6 +118,12 @@ export async function searchFlights(params: {
 
     const offer: AmadeusFlightOffer = data.data[0];
 
+    // Log the full offer structure to see what we're getting
+    console.log('=== AMADEUS API RESPONSE ===');
+    console.log('Full offer:', JSON.stringify(offer, null, 2));
+    console.log('Price object:', JSON.stringify(offer.price, null, 2));
+    console.log('===========================');
+
     // Calculate taxes (total - base)
     const total = parseFloat(offer.price.grandTotal || offer.price.total);
     const base = parseFloat(offer.price.base);
@@ -124,9 +137,13 @@ export async function searchFlights(params: {
 
     const taxes = taxesAndFees - fees;
 
-    // Generate booking link (Amadeus test environment doesn't provide deep links,
-    // so we'll create a search URL that users can use)
-    const bookingLink = `https://www.google.com/travel/flights?q=flights+from+${params.origin}+to+${params.destination}+on+${params.departureDate}`;
+    // Generate booking link for Google Flights
+    let bookingLink = `https://www.google.com/travel/flights?q=flights+from+${params.origin}+to+${params.destination}+on+${params.departureDate}`;
+
+    // Add return date for round-trip flights
+    if (params.returnDate) {
+      bookingLink += `+returning+${params.returnDate}`;
+    }
 
     return {
       price: total,
