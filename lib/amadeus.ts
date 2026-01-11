@@ -145,20 +145,22 @@ export async function searchFlights(params: {
 
     const taxes = taxesAndFees - fees;
 
-    // Generate booking link using simplified Google Flights URL
-    // This format is reliable and works consistently
-    let bookingLink = 'https://www.google.com/travel/flights?';
+    // Generate booking link using Google search that redirects to Google Flights
+    // This is the most reliable method that consistently works
+    let searchQuery = `google flights ${params.origin} to ${params.destination}`;
 
-    const params_array = [
-      `tfs=f.0.${params.origin}.${params.destination}.${params.departureDate}`,
-    ];
-
-    // Add return flight for round-trip
+    // Add date information
+    searchQuery += ` ${params.departureDate}`;
     if (params.returnDate) {
-      params_array[0] += `*f.1.${params.destination}.${params.origin}.${params.returnDate}`;
+      searchQuery += ` to ${params.returnDate}`;
     }
 
-    bookingLink += params_array.join('&');
+    // Add passenger and class info
+    if (params.adults > 1) {
+      searchQuery += ` ${params.adults} passengers`;
+    }
+
+    const bookingLink = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 
     console.log('📎 Generated booking link:', bookingLink);
 
