@@ -16,6 +16,8 @@ model Flight {
   destination  String
   airline      String
   travelDate   DateTime
+  returnDate   DateTime?      // null for one-way
+  tripType     String         @default("one-way") // one-way or round-trip
   cabinClass   String         // economy, premium_economy, business, first
   numPassengers Int
   createdAt    DateTime       @default(now())

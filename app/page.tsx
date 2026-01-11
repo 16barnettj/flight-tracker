@@ -25,6 +25,8 @@ interface Flight {
   destination: string;
   airline: string;
   travelDate: string;
+  returnDate?: string | null;
+  tripType: string;
   cabinClass: string;
   numPassengers: number;
   createdAt: string;
@@ -35,8 +37,10 @@ interface Flight {
 export default function Dashboard() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -44,6 +48,8 @@ export default function Dashboard() {
     destination: '',
     airline: '',
     travelDate: '',
+    returnDate: '',
+    tripType: 'one-way' as 'one-way' | 'round-trip',
     cabinClass: 'economy',
     numPassengers: 1,
   });
@@ -74,7 +80,8 @@ export default function Dashboard() {
 
   const handleAddFlight = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setError('');
+    setSubmitting(true);
 
     try {
       const response = await fetch('/api/flights', {
@@ -83,22 +90,32 @@ export default function Dashboard() {
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        setShowAddModal(false);
-        setFormData({
-          origin: '',
-          destination: '',
-          airline: '',
-          travelDate: '',
-          cabinClass: 'economy',
-          numPassengers: 1,
-        });
-        await fetchFlights();
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to add flight');
+        setSubmitting(false);
+        return;
       }
+
+      // Success
+      setShowAddModal(false);
+      setFormData({
+        origin: '',
+        destination: '',
+        airline: '',
+        travelDate: '',
+        returnDate: '',
+        tripType: 'one-way',
+        cabinClass: 'economy',
+        numPassengers: 1,
+      });
+      await fetchFlights();
     } catch (error) {
       console.error('Error adding flight:', error);
+      setError('An error occurred. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -120,12 +137,14 @@ export default function Dashboard() {
     0
   );
 
-  const allNotifications = flights.flatMap((flight) =>
-    flight.notifications.map((notification) => ({
-      ...notification,
-      flight,
-    }))
-  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const allNotifications = flights
+    .flatMap((flight) =>
+      flight.notifications.map((notification) => ({
+        ...notification,
+        flight,
+      }))
+    )
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const getDaysUntilDeparture = (travelDate: string) => {
     const days = Math.ceil(
@@ -207,7 +226,10 @@ export default function Dashboard() {
         {/* Add Flight Button */}
         <div className="mb-6">
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setShowAddModal(true);
+              setError('');
+            }}
             className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             + Add Flight
@@ -236,8 +258,13 @@ export default function Dashboard() {
                   className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {flight.origin} → {flight.destination}
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {flight.origin} → {flight.destination}
+                      </div>
+                      {flight.tripType === 'round-trip' && (
+                        <div className="text-sm text-blue-600 font-medium mt-1">Round-trip</div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDeleteFlight(flight.id)}
@@ -252,12 +279,19 @@ export default function Dashboard() {
                       <span className="font-medium">Airline:</span> {flight.airline}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Class:</span> {formatCabinClass(flight.cabinClass)}
+                      <span className="font-medium">Class:</span>{' '}
+                      {formatCabinClass(flight.cabinClass)}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Date:</span>{' '}
+                      <span className="font-medium">Departure:</span>{' '}
                       {new Date(flight.travelDate).toLocaleDateString()}
                     </div>
+                    {flight.returnDate && (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">Return:</span>{' '}
+                        {new Date(flight.returnDate).toLocaleDateString()}
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600">
                       <span className="font-medium">Passengers:</span> {flight.numPassengers}
                     </div>
@@ -277,9 +311,7 @@ export default function Dashboard() {
                       {daysUntil} days until departure
                     </div>
                     {flight.priceHistory.length > 1 && (
-                      <div className="text-gray-500">
-                        {flight.priceHistory.length} price checks
-                      </div>
+                      <div className="text-gray-500">{flight.priceHistory.length} price checks</div>
                     )}
                   </div>
                 </div>
@@ -291,19 +323,57 @@ export default function Dashboard() {
 
       {/* Add Flight Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 my-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Add Flight</h2>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false);
+                  setError('');
+                }}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
 
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleAddFlight} className="space-y-4">
+              {/* Trip Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trip Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, tripType: 'one-way', returnDate: '' })}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      formData.tripType === 'one-way'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    One-way
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, tripType: 'round-trip' })}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      formData.tripType === 'round-trip'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Round-trip
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Origin Airport Code
@@ -311,7 +381,9 @@ export default function Dashboard() {
                 <input
                   type="text"
                   value={formData.origin}
-                  onChange={(e) => setFormData({ ...formData, origin: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, origin: e.target.value.toUpperCase() })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="SFO"
                   maxLength={3}
@@ -326,7 +398,9 @@ export default function Dashboard() {
                 <input
                   type="text"
                   value={formData.destination}
-                  onChange={(e) => setFormData({ ...formData, destination: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, destination: e.target.value.toUpperCase() })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="JFK"
                   maxLength={3}
@@ -341,13 +415,15 @@ export default function Dashboard() {
                   value={formData.airline}
                   onChange={(e) => setFormData({ ...formData, airline: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="United"
+                  placeholder="United Airlines"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Travel Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Departure Date
+                </label>
                 <input
                   type="date"
                   value={formData.travelDate}
@@ -357,6 +433,22 @@ export default function Dashboard() {
                   required
                 />
               </div>
+
+              {formData.tripType === 'round-trip' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Return Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.returnDate}
+                    onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min={formData.travelDate || new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
@@ -377,7 +469,9 @@ export default function Dashboard() {
                 <input
                   type="number"
                   value={formData.numPassengers}
-                  onChange={(e) => setFormData({ ...formData, numPassengers: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, numPassengers: parseInt(e.target.value) })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   min="1"
                   max="9"
@@ -388,17 +482,21 @@ export default function Dashboard() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setError('');
+                  }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Adding...' : 'Add Flight'}
+                  {submitting ? 'Adding...' : 'Add Flight'}
                 </button>
               </div>
             </form>
