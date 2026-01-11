@@ -106,13 +106,21 @@ export async function searchFlights(params: {
     );
 
     if (!response.ok) {
-      console.error('Amadeus API error:', await response.text());
+      const errorText = await response.text();
+      console.error('❌ Amadeus API error:', response.status, errorText);
       return null;
     }
 
     const data = await response.json();
 
     if (!data.data || data.data.length === 0) {
+      console.log('⚠️  No nonstop flights found for:', {
+        origin: params.origin,
+        destination: params.destination,
+        departureDate: params.departureDate,
+        returnDate: params.returnDate,
+        travelClass: params.travelClass,
+      });
       return null;
     }
 
@@ -137,13 +145,31 @@ export async function searchFlights(params: {
 
     const taxes = taxesAndFees - fees;
 
-    // Generate booking link for Google Flights
-    let bookingLink = `https://www.google.com/travel/flights?q=flights+from+${params.origin}+to+${params.destination}+on+${params.departureDate}`;
+    // Generate booking link for Google Flights with proper parameters
+    // Map cabin class to Google Flights format
+    const cabinMap: { [key: string]: number } = {
+      economy: 2,        // Economy
+      premium_economy: 3, // Premium Economy
+      business: 4,       // Business
+      first: 5,          // First
+    };
+
+    const googleCabinClass = cabinMap[params.travelClass] || 2;
+
+    // Build Google Flights URL
+    let bookingLink = `https://www.google.com/travel/flights`;
+    const flightParams = new URLSearchParams({
+      tfs: `f.0.${params.origin}.${params.destination}.${params.departureDate}`,
+      curr: 'USD',
+      hl: 'en',
+    });
 
     // Add return date for round-trip flights
     if (params.returnDate) {
-      bookingLink += `+returning+${params.returnDate}`;
+      flightParams.set('tfs', `f.0.${params.origin}.${params.destination}.${params.departureDate}*f.1.${params.destination}.${params.origin}.${params.returnDate}`);
     }
+
+    bookingLink += '?' + flightParams.toString() + `&tfc=${googleCabinClass}&tfa=${params.adults}`;
 
     return {
       price: total,
