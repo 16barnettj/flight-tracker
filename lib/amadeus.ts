@@ -145,31 +145,31 @@ export async function searchFlights(params: {
 
     const taxes = taxesAndFees - fees;
 
-    // Generate booking link for Google Flights with proper parameters
-    // Map cabin class to Google Flights format
-    const cabinMap: { [key: string]: number } = {
-      economy: 2,        // Economy
-      premium_economy: 3, // Premium Economy
-      business: 4,       // Business
-      first: 5,          // First
+    // Generate booking link for Google Flights
+    // Map cabin class to Google Flights class code
+    const cabinMap: { [key: string]: string } = {
+      economy: 'e',           // Economy
+      premium_economy: 'p',   // Premium Economy
+      business: 'b',          // Business
+      first: 'f',             // First
     };
 
-    const googleCabinClass = cabinMap[params.travelClass] || 2;
+    const googleCabinClass = cabinMap[params.travelClass] || 'e';
 
-    // Build Google Flights URL
-    let bookingLink = `https://www.google.com/travel/flights`;
-    const flightParams = new URLSearchParams({
-      tfs: `f.0.${params.origin}.${params.destination}.${params.departureDate}`,
-      curr: 'USD',
-      hl: 'en',
-    });
-
-    // Add return date for round-trip flights
+    // Build Google Flights URL using trip parameter format
+    let tripParam = '';
     if (params.returnDate) {
-      flightParams.set('tfs', `f.0.${params.origin}.${params.destination}.${params.departureDate}*f.1.${params.destination}.${params.origin}.${params.returnDate}`);
+      // Round-trip: origin-destination-departdate*destination-origin-returndate
+      tripParam = `${params.origin}-${params.destination}-${params.departureDate}*${params.destination}-${params.origin}-${params.returnDate}`;
+    } else {
+      // One-way: origin-destination-departdate
+      tripParam = `${params.origin}-${params.destination}-${params.departureDate}`;
     }
 
-    bookingLink += '?' + flightParams.toString() + `&tfc=${googleCabinClass}&tfa=${params.adults}`;
+    // Build URL with all parameters
+    const bookingLink = `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights from ${params.origin} to ${params.destination}`)}&curr=USD&hl=en&gl=us&adults=${params.adults}&class=${googleCabinClass}`;
+
+    console.log('📎 Generated booking link:', bookingLink);
 
     return {
       price: total,

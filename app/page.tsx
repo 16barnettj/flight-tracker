@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [showOriginDropdown, setShowOriginDropdown] = useState(false);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
   const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
+  const [checkingPrices, setCheckingPrices] = useState(false);
   const originRef = useRef<HTMLDivElement>(null);
   const destRef = useRef<HTMLDivElement>(null);
   const airlineRef = useRef<HTMLDivElement>(null);
@@ -181,6 +182,22 @@ export default function Dashboard() {
     }
   };
 
+  const handleCheckPrices = async () => {
+    setCheckingPrices(true);
+    try {
+      const response = await fetch('/api/cron/check-prices');
+      const data = await response.json();
+      console.log('Price check result:', data);
+      await fetchFlights();
+      alert(`Price check complete!\nUpdated: ${data.updated} flights\nNotifications: ${data.notifications}`);
+    } catch (error) {
+      console.error('Error checking prices:', error);
+      alert('Failed to check prices. Please try again.');
+    } finally {
+      setCheckingPrices(false);
+    }
+  };
+
   const unreadNotifications = flights.reduce(
     (count, flight) => count + flight.notifications.filter((n) => !n.isRead).length,
     0
@@ -273,15 +290,22 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Add Flight Button */}
-        <div className="mb-6">
+        <div className="mb-6 flex gap-3 flex-wrap">
           <button
             onClick={() => {
               setShowAddModal(true);
               setError('');
             }}
-            className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             + Add Flight
+          </button>
+          <button
+            onClick={handleCheckPrices}
+            disabled={checkingPrices || flights.length === 0}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {checkingPrices ? '🔄 Checking Prices...' : '🔄 Check All Prices'}
           </button>
         </div>
 
